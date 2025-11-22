@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">{{ 'Edit' if candidate else 'Add' }} Candidate</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Candidate Name</label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               value="{{ candidate.name if candidate else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="party" class="form-label">Party Name</label>
+                        <input type="text" class="form-control" id="party" name="party" 
+                               value="{{ candidate.party if candidate else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="image" class="form-label">Candidate Image</label>
+                        <input type="file" class="form-control" id="image" name="image" 
+                               accept="image/*" {{ '' if candidate else 'required' }}>
+                        {% if candidate and candidate.image_path %}
+                        <div class="mt-2">
+                            <img src="{{ url_for('static', filename=candidate.image_path) }}" 
+                                 alt="Current image" style="height: 100px;">
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary">
+                            {{ 'Update' if candidate else 'Add' }} Candidate
+                        </button>
+                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,237 @@
+/* ---------------------------------------
+   GLOBAL BASE STYLING
+------------------------------------------*/
+body {
+  background-color: #f7f9fc;
+  font-family: "Poppins", "Segoe UI", Roboto, sans-serif;
+  color: #2c3e50;
+  min-height: 100vh;
+}
+
+/* Smooth fade animation for page transitions */
+body, .card, .btn {
+  transition: all 0.25s ease-in-out;
+}
+
+/* Scrollbar cleanup for modern look */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* ---------------------------------------
+   NAVBAR
+------------------------------------------*/
+.navbar {
+  background: linear-gradient(90deg, #0066ff, #004de6);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.navbar-brand i {
+  font-size: 1.3rem;
+}
+
+/* ---------------------------------------
+   CARDS & CONTAINERS
+------------------------------------------*/
+.card {
+  border-radius: 16px;
+  border: none;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
+
+.card h3, .card h4, .card h5 {
+  font-weight: 600;
+}
+
+/* ---------------------------------------
+   BUTTONS
+------------------------------------------*/
+.btn {
+  border-radius: 25px;
+  font-weight: 600;
+  padding: 10px 18px;
+}
+
+.btn-primary {
+  background: linear-gradient(90deg, #007bff, #0056d6);
+  border: none;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(90deg, #005de6, #0040cc);
+}
+
+.btn-success {
+  background: linear-gradient(90deg, #28a745, #218838);
+  border: none;
+}
+
+.btn-success:hover {
+  background: linear-gradient(90deg, #1f8d3b, #187730);
+}
+
+/* Outline buttons (Admin utilities) */
+.btn-outline-secondary:hover {
+  background-color: #f0f0f0;
+  color: #222;
+}
+
+/* ---------------------------------------
+   ALERTS
+------------------------------------------*/
+.alert {
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* ---------------------------------------
+   FOOTER
+------------------------------------------*/
+footer {
+  background: linear-gradient(90deg, #0066ff, #004de6);
+  color: #fff;
+  font-size: 0.9rem;
+  letter-spacing: 0.3px;
+  box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
+}
+
+footer strong {
+  font-weight: 600;
+}
+
+/* ---------------------------------------
+   FORMS
+------------------------------------------*/
+.form-control {
+  border-radius: 20px;
+  border: 1px solid #ced4da;
+  padding: 10px 15px;
+}
+
+.form-control:focus {
+  box-shadow: 0 0 0 0.25rem rgba(0,123,255,0.25);
+}
+
+/* ---------------------------------------
+   TABLES
+------------------------------------------*/
+.table {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.table thead {
+  background-color: #007bff;
+  color: white;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f1f7ff;
+}
+
+/* ---------------------------------------
+   DASHBOARD ELEMENTS
+------------------------------------------*/
+.summary-card {
+  background: #ffffff;
+  border-left: 5px solid #007bff;
+  border-radius: 12px;
+  padding: 15px 20px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+}
+
+.summary-card h2 {
+  font-weight: 700;
+  color: #007bff;
+}
+
+.summary-card p {
+  color: #555;
+  font-size: 0.95rem;
+}
+
+/* Progress bars for admin dashboard */
+.progress {
+  height: 8px;
+  border-radius: 10px;
+}
+
+.progress-bar {
+  background: linear-gradient(90deg, #007bff, #0056d6);
+}
+
+/* ---------------------------------------
+   LOGIN & OTP PAGES
+------------------------------------------*/
+.login-container {
+  max-width: 420px;
+  margin: 0 auto;
+  background: #ffffff;
+  padding: 35px 30px;
+  border-radius: 20px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.07);
+}
+
+.login-container h3 {
+  font-weight: 700;
+  color: #007bff;
+}
+
+.login-container .form-label {
+  font-weight: 500;
+}
+
+/* ---------------------------------------
+   VOTE PAGE
+------------------------------------------*/
+.vote-card {
+  background: #ffffff;
+  border-radius: 15px;
+  padding: 25px;
+  max-width: 600px;
+  margin: 0 auto;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.vote-card:hover {
+  transform: scale(1.01);
+}
+
+.vote-card input[type="radio"] {
+  accent-color: #007bff;
+}
+
+/* Timer styling */
+#timer {
+  font-weight: 700;
+}
+
+/* ---------------------------------------
+   ANIMATIONS
+------------------------------------------*/
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

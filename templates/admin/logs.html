@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>OTP Audit Logs</h2>
+    <p class="text-muted">Showing last 100 OTP generation events</p>
+    
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Voter ID</th>
+                    <th>Voter Name</th>
+                    <th>Email</th>
+                    <th>OTP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log['timestamp'] }}</td>
+                    <td>{{ log['voter_id'] }}</td>
+                    <td>{{ log['name'] or 'N/A' }}</td>
+                    <td>{{ log['email'] }}</td>
+                    <td>{{ log['otp'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="mt-4">
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Back to Admin Dashboard</a>
+    </div>
+</div>
+{% endblock %}

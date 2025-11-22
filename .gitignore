@@ -1,0 +1,14 @@
+venv/
+__pycache__/
+*.pyc
+venv/
+__pycache__/
+*.pyc
+*.db
+.env
+output.pdf
+Election_Results.pdf
+static/uploads/*
+
+
+

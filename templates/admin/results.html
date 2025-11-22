@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Election Results{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    <div class="card shadow p-4 mt-4">
+      <h3 class="text-center mb-4">Election Results</h3>
+      <canvas id="resultsChart" width="400" height="200"></canvas>
+      <div class="mt-4">
+        <table class="table table-striped">
+          <thead>
+            <tr><th>Candidate</th><th>Votes</th></tr>
+          </thead>
+          <tbody>
+            {% for c in candidates %}
+            <tr>
+              <td>{{ c['name'] }}</td>
+              <td>{{ c['votes'] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // Prepare data from server-rendered candidates
+  const labels = JSON.parse('{{ candidates|map(attribute="name")|list|tojson|safe }}');
+  const dataValues = JSON.parse('{{ candidates|map(attribute="votes")|list|tojson|safe }}');
+
+  const ctx = document.getElementById('resultsChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Votes',
+        data: dataValues,
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true, precision:0 }
+      }
+    }
+  });
+</script>
+{% endblock %}
