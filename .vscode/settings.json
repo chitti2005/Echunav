@@ -1,0 +1,12 @@
+{
+  "files.associations": {
+    "*.html": "jinja"
+  },
+  "emmet.includeLanguages": {
+    "jinja": "html"
+  },
+
+  // optional: if you still see many false positives, disable these validators for the workspace
+  "css.validate": false,
+  "javascript.validate.enable": false
+}

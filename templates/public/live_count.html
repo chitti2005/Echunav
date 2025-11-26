@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+{% block title %}Live Vote Counting{% endblock %}
+
+{% block content %}
+
+<!-- REPUBLIC TV STYLE HEADER -->
+<div class="tv-header text-center">
+    <span class="live-badge">🔴 LIVE</span>
+    <span class="headline">ELECTION COUNTING ROOM</span>
+    <span class="subline">Powered by E-Chunav • Real-Time Updates</span>
+</div>
+
+<div class="container mt-4">
+
+    <!-- Stats Row -->
+    <div class="row text-center mb-4">
+        <div class="col-md-4">
+            <div class="stat-box">
+                TOTAL VOTERS
+                <h3>{{ total_voters }}</h3>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="stat-box">
+                VOTES COUNTED
+                <h3>{{ total_votes }}</h3>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="stat-box">
+                TURNOUT
+                <h3>{{ (total_votes / total_voters * 100) | round(2) if total_voters else 0 }}%</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+
+        <!-- LEFT SIDE -->
+        <div class="col-md-6">
+
+            {% for c in candidates %}
+            <div class="candidate-card 
+                {% if c['votes'] == max_votes and max_votes != 0 %}leading{% else %}trailing{% endif %}">
+                
+                <div class="d-flex align-items-center">
+
+                    <!-- Candidate Photo -->
+                    {% if c['photo'] %}
+                       <img src="{{ url_for('static', filename=c['photo']) }}" 
+                            class="candidate-photo me-3">
+                            
+                    {% else %}
+                        <img src="https://via.placeholder.com/70" class="candidate-photo me-3">
+                    {% endif %}
+
+                    <!-- Candidate Info -->
+                    <div class="flex-grow-1">
+                        <h5 class="fw-bold mb-1">{{ c['name'] }}</h5>
+
+                        <p class="vote-count">
+                            Votes: {{ c['votes'] }}
+                        </p>
+
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-danger"
+                                 style="width: {% if total_votes>0 %}{{ (c['votes']/total_votes*100) }}{% else %}0{% endif %}%;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Badge -->
+                    <div class="ms-3">
+                        {% if c['votes'] == max_votes and max_votes != 0 %}
+                            <span class="badge bg-success fs-6">LEADING</span>
+                        {% else %}
+                            <span class="badge bg-danger fs-6">TRAILING</span>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+            {% endfor %}
+
+        </div>
+
+        <!-- RIGHT CHART -->
+        <div class="col-md-6">
+            <div class="chart-box shadow-sm p-3">
+                <canvas id="liveChart" height="300"></canvas>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- SCROLLING LIVE TICKER -->
+<div class="ticker-wrap">
+    <div class="ticker">
+        {% for c in candidates %}
+            <div class="ticker-item">{{ c['name'] }}: {{ c['votes'] }} votes</div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const labels = {{ candidates | map(attribute='name') | list | tojson }};
+const votes = {{ candidates | map(attribute='votes') | list | tojson }};
+
+new Chart(document.getElementById("liveChart"), {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: "Votes",
+            data: votes,
+            backgroundColor: "#d50000",
+            borderColor: "#8b0000",
+            borderWidth: 2
+        }]
+    },
+    options: {
+        animation: false,
+        responsive: true,
+        scales: { y: { beginAtZero: true } }
+    }
+});
+
+// Refresh every 3 seconds
+setInterval(() => location.reload(), 3000);
+</script>
+
+<style>
+/* ---- REPUBLIC TV THEME ---- */
+.candidate-photo {
+    width: 70px !important;
+    height: 70px !important;
+    object-fit: cover !important;
+    border-radius: 8px;    /* smooth edges */
+    border: 3px solid #d50000;
+}
+
+.tv-header {
+    background: linear-gradient(to right, #8b0000, #d50000);
+    padding: 20px;
+    color: white;
+    border-bottom: 6px solid white;
+}
+
+.live-badge {
+    background: #ff0000;
+    padding: 5px 15px;
+    font-weight: bold;
+    border-radius: 4px;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.4; }
+    100% { opacity: 1; }
+}
+
+.headline {
+    font-size: 30px;
+    font-weight: 900;
+    margin-left: 10px;
+}
+
+.subline {
+    display: block;
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.stat-box {
+    background: #d50000;
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.candidate-card {
+    border-left: 8px solid red;
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: 0 0 10px rgba(200,0,0,0.3);
+}
+
+.candidate-card.leading {
+    border-left-color: #28a745;
+    animation: glow 1.5s infinite;
+}
+
+@keyframes glow {
+    0% { box-shadow: 0 0 10px rgba(40,167,69,0.4); }
+    50% { box-shadow: 0 0 25px rgba(40,167,69,0.8); }
+    100% { box-shadow: 0 0 10px rgba(40,167,69,0.4); }
+}
+
+.candidate-photo {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 3px solid #d50000;
+}
+
+.ticker-wrap {
+    width: 100%;
+    overflow: hidden;
+    background: #8b0000;
+    color: white;
+    padding: 10px 0;
+    position: fixed;
+    bottom: 0;
+    border-top: 4px solid white;
+    z-index: 999;
+}
+
+.ticker {
+    display: flex;
+    animation: ticker 12s linear infinite;
+}
+
+.ticker-item {
+    padding: 0 40px;
+    white-space: nowrap;
+    font-weight: bold;
+}
+
+@keyframes ticker {
+    from { transform: translateX(100%); }
+    to { transform: translateX(-100%); }
+}
+.candidate-card * {
+    color: #000 !important;
+    opacity: 1 !important;
+}
+
+/* Make name bold and clearly visible */
+.candidate-card h5 {
+    font-weight: 700 !important;
+    font-size: 20px !important;
+    color: #000 !important;
+}
+
+/* Fix the "Votes: 0" text */
+.vote-count {
+    color: #444 !important;
+    font-weight: 600 !important;
+}
+
+</style>
+{% endblock %}

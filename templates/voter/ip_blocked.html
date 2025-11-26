@@ -1,0 +1,15 @@
+ {% extends 'base.html' %}
+{% block title %}Voting Not Allowed{% endblock %}
+{% block content %}
+<div class="text-center mt-5">
+    <div class="alert alert-danger shadow py-4">
+        <h4 class="fw-bold">Device Already Used</h4>
+        <p class="mt-2">
+            A vote has already been cast from this device.
+            <br>
+            Multiple votes from the same IP address are not allowed for this election.
+        </p>
+    </div>
+    <a href="/" class="btn btn-primary mt-3">Return to Home</a>
+</div>
+{% endblock %}

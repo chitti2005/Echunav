@@ -159,6 +159,19 @@ def admin_add_candidate():
 
     try:
         if photo_file and photo_file.filename and allowed_file(photo_file.filename):
+            # Check file size manually (less than 2 MB)
+            try:
+                file_obj = getattr(photo_file, 'stream', photo_file)
+                file_obj.seek(0, os.SEEK_END)
+                photo_size = file_obj.tell()
+                file_obj.seek(0)
+            except Exception:
+                photo_size = None
+
+            if photo_size and photo_size > 2 * 1024 * 1024:
+                flash("Photo is too large! Maximum size is 2 MB.", "danger")
+                return redirect(url_for('admin_dashboard'))
+
             fname = secure_filename(photo_file.filename)
             unique = f"{int(time.time())}_{random.randint(1000,9999)}_{fname}"
             photo_file.save(os.path.join(app.config['UPLOAD_FOLDER'], unique))
@@ -375,6 +388,207 @@ def admin_logout():
     flash("Admin logged out.", "info")
     return redirect(url_for('admin_login'))
 
+# Suspicious IPs analysis
+
+@app.route('/admin/suspicious_ips')
+def suspicious_ips():
+    if 'admin' not in session:
+        return redirect(url_for('admin_login'))
+
+    conn = db_connection()
+    data = conn.execute("""
+        SELECT 
+            ip_address,
+            SUM(CASE WHEN action='login' THEN 1 ELSE 0 END) AS login_count,
+            SUM(CASE WHEN action='vote_cast' THEN 1 ELSE 0 END) AS vote_count,
+            COUNT(DISTINCT user_id) AS unique_voters
+        FROM logs
+        WHERE ip_address IS NOT NULL AND ip_address != ''
+        GROUP BY ip_address
+        ORDER BY vote_count DESC, login_count DESC
+    """).fetchall()
+    conn.close()
+
+    # Prepare analysis for template
+    ip_analysis = []
+    for row in data:
+        risk = "Low"
+        if row['vote_count'] >= 2:
+            risk = "High"
+        elif row['unique_voters'] >= 3:
+            risk = "Medium"
+        elif row['login_count'] >= 10:
+            risk = "Medium"
+
+        ip_analysis.append({
+            "ip": row["ip_address"],
+            "logins": row["login_count"],
+            "votes": row["vote_count"],
+            "users": row["unique_voters"],
+            "risk": risk
+        })
+
+    return render_template("admin/suspicious_ips.html", ips=ip_analysis)
+
+
+# New election (reset votes, create new election entry)
+
+from datetime import datetime
+
+# Add near the other admin routes
+
+@app.route('/admin/new_election', methods=['POST'])
+def admin_new_election():
+    if 'admin' not in session:
+        return redirect(url_for('admin_login'))
+
+    conn = db_connection()
+    cur = conn.cursor()
+
+    try:
+        # 🔥 1. Close all existing elections
+        cur.execute("UPDATE elections SET is_active = 0")
+
+        # 🔥 2. Create NEW election
+        cur.execute("""
+            INSERT INTO elections (name, description, is_active)
+            VALUES ('New Election', 'Reset and started fresh', 1)
+        """)
+        new_election_id = cur.lastrowid
+
+        # 🔥 3. Clear ALL candidates
+        cur.execute("DELETE FROM candidates")
+        cur.execute("DELETE FROM sqlite_sequence WHERE name='candidates'")
+
+        # 🔥 4. Reset voter status
+        cur.execute("UPDATE voters SET has_voted = 0")
+
+        # 🔥 5. CLEAR ALL LOGS
+        cur.execute("DELETE FROM logs")
+        cur.execute("DELETE FROM otp_log")
+
+        # Reset AUTO INCREMENT counters
+        cur.execute("DELETE FROM sqlite_sequence WHERE name='logs'")
+        cur.execute("DELETE FROM sqlite_sequence WHERE name='otp_log'")
+
+        # 🔥 6. Update election status table
+        cur.execute("UPDATE election_status SET status='OPEN' WHERE id=1")
+
+        conn.commit()
+        flash("✅ New election started successfully!", "success")
+
+    except Exception as e:
+        conn.rollback()
+        print("new_election error:", e)
+        flash("⚠ Failed to start new election.", "danger")
+
+    finally:
+        conn.close()
+
+    return redirect(url_for('admin_dashboard'))
+
+    # verify admin password from DB
+    conn = db_connection()
+    try:
+        admin_row = conn.execute("SELECT password_hash FROM admin WHERE username=?", (session['admin'],)).fetchone()
+        if not admin_row or not check_password_hash(admin_row['password_hash'], entered_pw):
+            flash("Incorrect admin password. New election cancelled.", "danger")
+            return redirect(url_for('admin_login'))
+
+        # Start transaction
+        cur = conn.cursor()
+
+        # Find current active election id (if any)
+        cur.execute("SELECT id FROM elections WHERE is_active=1 ORDER BY id DESC LIMIT 1")
+        row = cur.fetchone()
+        old_election_id = row['id'] if row else None
+
+        # SOFT MODE (recommended): mark all existing elections inactive, create new active election
+        if mode == 'soft':
+            # deactivate previous elections
+            cur.execute("UPDATE elections SET is_active=0 WHERE is_active=1")
+            # create new election row (optionally add name)
+            now = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
+            cur.execute("INSERT INTO elections (name, is_active, created_at) VALUES (?, 1, ?)",
+                        (f"Election {now}", now))
+            new_election_id = cur.lastrowid
+
+            # Important: do NOT modify existing candidate rows. New election begins empty.
+
+            # Optionally reset voters' has_voted flag so they can vote in the new election.
+            # If you want per-election voter tracking, consider adding a votes_per_election table instead.
+            cur.execute("UPDATE voters SET has_voted = 0")
+
+            conn.commit()
+            flash("New election created (soft). Previous election archived (inactive).", "success")
+            return redirect(url_for('admin_login'))
+
+        # HARD MODE: archive candidates / reset votes (destructive)
+        elif mode == 'hard':
+            # ensure archive table exists (create-safe)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS candidates_archive (
+                  archive_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  original_candidate_id INTEGER,
+                  election_id INTEGER,
+                  name TEXT,
+                  description TEXT,
+                  photo TEXT,
+                  symbol TEXT,
+                  votes INTEGER,
+                  archived_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            # archive current candidates (if old election exists)
+            if old_election_id:
+                cur.execute("""
+                    INSERT INTO candidates_archive
+                       (original_candidate_id, election_id, name, description, photo, symbol, votes, archived_at)
+                    SELECT candidate_id, election_id, name, description, photo, symbol, votes, CURRENT_TIMESTAMP
+                    FROM candidates WHERE election_id=?
+                """, (old_election_id,))
+
+            # deactivate previous elections
+            cur.execute("UPDATE elections SET is_active=0 WHERE is_active=1")
+
+            # create NEW election row
+            now = datetime.utcnow().isoformat(sep=' ', timespec='seconds')
+            cur.execute("INSERT INTO elections (name, is_active, created_at) VALUES (?, 1, ?)",
+                        (f"Election {now}", now))
+            new_election_id = cur.lastrowid
+
+            # Reset candidate votes for new election (we keep candidate rows separate; better to insert fresh candidates)
+            # If you had previously reused candidate rows, reset their votes to 0 but keep them unlinked to new election.
+            cur.execute("UPDATE candidates SET votes = 0 WHERE election_id IS NULL OR election_id = ?", (new_election_id,))
+
+            # Reset all voters so they can vote again
+            cur.execute("UPDATE voters SET has_voted = 0")
+
+            # Optionally clear logs and OTP logs (destructive)
+            cur.execute("DELETE FROM logs")
+            cur.execute("DELETE FROM otp_log")
+
+            conn.commit()
+            flash("New election created (hard). Old data archived and logs cleared.", "warning")
+            return redirect(url_for('admin_login'))
+
+        else:
+            flash("Unknown mode for new_election. Use mode=soft or mode=hard.", "danger")
+            return redirect(url_for('admin_login'))
+
+    except Exception as e:
+        conn.rollback()
+        print("admin_new_election error:", e)
+        flash("Failed to create new election (see server logs).", "danger")
+        return redirect(url_for('admin_login'))
+    finally:
+        conn.close()
+
+
+        
+
+    
+
 # ---------------------------
 # Error handlers
 # ---------------------------
@@ -391,4 +605,4 @@ def server_error(e):
 # ---------------------------
 if __name__ == '__main__':
     # Use port 5001 for admin app (voter app runs on 5000)
-    app.run(host='127.0.0.1', port=5004, debug=True)
+    app.run(host='127.0.0.1', port=5006, debug=True)

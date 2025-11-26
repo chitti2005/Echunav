@@ -1,22 +1,63 @@
 {% extends 'base.html' %}
 {% block title %}Admin Login{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-md-5">
     <div class="card shadow p-4 mt-5">
+
+      <!-- LOGIN HEADING -->
       <h3 class="text-center mb-3">Admin Login</h3>
+
+      <!-- LOGIN FORM -->
       <form action="/admin/login" method="POST">
         <div class="mb-3">
           <label class="form-label">Username</label>
           <input class="form-control" name="username" required>
         </div>
+
         <div class="mb-3">
           <label class="form-label">Password</label>
           <input class="form-control" name="password" type="password" required>
         </div>
+
         <button class="btn btn-primary w-100" type="submit">Sign In</button>
       </form>
+
+      <!-- SPACER -->
+      <hr class="my-4">
+
+      <!-- START NEW ELECTION BUTTON -->
+      <button class="btn btn-outline-danger w-100" onclick="confirmNewElection()">
+        <i class="bi bi-plus-circle"></i> Start New Election
+      </button>
+
+      <!-- HIDDEN FORM FOR NEW ELECTION -->
+      <form id="newElectionForm" method="POST" action="/admin/new_election" class="d-none">
+        <input type="hidden" name="confirm_password" id="confirm_password">
+      </form>
+
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmNewElection() {
+    // Ask admin password for reset confirmation
+    let pwd = prompt("Enter admin password to confirm reset:");
+
+    if (!pwd) {
+        alert("Reset cancelled.");
+        return;
+    }
+
+    // Put password into hidden field
+    document.getElementById("confirm_password").value = pwd;
+
+    // Submit form
+    document.getElementById("newElectionForm").submit();
+}
+</script>
 {% endblock %}

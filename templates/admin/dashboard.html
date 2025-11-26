@@ -1,57 +1,55 @@
 {% extends 'base.html' %}
 {% block title %}Admin Dashboard | E-Chunav{% endblock %}
+
 {% block content %}
 <div class="container-fluid fade-in">
 
-  <!-- Header -->
+  <!-- HEADER -->
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h3 class="fw-bold text-primary">
-      <i class="bi bi-speedometer2 me-2"></i>Admin Dashboard
+      <i class="bi bi-speedometer2 me-2"></i> Admin Dashboard
     </h3>
+
     <div>
-      <a href="/results" class="btn btn-outline-primary btn-sm me-2">
+      <a href="/admin/results" class="btn btn-outline-primary btn-sm me-2">
         <i class="bi bi-bar-chart-line"></i> View Results
       </a>
-      <a href="/logout" class="btn btn-danger btn-sm">
+
+      <a href="/admin/logout" class="btn btn-danger btn-sm">
         <i class="bi bi-box-arrow-right"></i> Logout
       </a>
     </div>
   </div>
 
-  <!-- Summary Stats -->
+  <!-- SUMMARY CARDS -->
   <div class="row g-4 mb-4">
-      <div class="card p-4">
-        <h5 class="fw-bold text-primary mb-3">
-          <i class="bi bi-person-plus-fill me-2"></i>Add New Candidate
-        </h5>
-        <form method="POST" action="/admin/add_candidate" enctype="multipart/form-data">
-          <div class="mb-2">
-            <input class="form-control" name="name" placeholder="Candidate name" required>
+
+    <div class="col-md-4">
+      <div class="summary-card p-4" style="border-left:6px solid #0d6efd;">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted mb-1">Total Voters</p>
+            <h2>{{ total_voters }}</h2>
           </div>
-          <div class="mb-2">
-            <textarea class="form-control" name="description" placeholder="Description or agenda" rows="2"></textarea>
-          </div>
-          <div class="mb-2">
-            <label class="form-label">Upload Photo:</label>
-            <input class="form-control" type="file" name="photo" accept="image/*" required>
-          </div>
-          <div class="mb-2">
-            <label class="form-label">Upload Symbol (optional):</label>
-            <input class="form-control" type="file" name="symbol" accept="image/*">
-          </div>
-          <button class="btn btn-success w-100 mt-2">
-            <i class="bi bi-plus-circle"></i> Add Candidate
-          </button>
-        </form>
-      </div>
-            <h2>{{ total_votes }}</h2>
-          </div>
-          <i class="bi bi-check2-square fs-1 text-success opacity-75"></i>
+          <i class="bi bi-people-fill fs-1 text-primary opacity-75"></i>
         </div>
       </div>
     </div>
+
     <div class="col-md-4">
-      <div class="summary-card" style="border-left-color:#ffc107;">
+      <div class="summary-card p-4" style="border-left:6px solid #28a745;">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted mb-1">Votes Cast</p>
+            <h2>{{ total_votes }}</h2>
+          </div>
+          <i class="bi bi-check-circle-fill fs-1 text-success opacity-75"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="summary-card p-4" style="border-left:6px solid #ffc107;">
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <p class="text-muted mb-1">Participation</p>
@@ -61,95 +59,124 @@
         </div>
       </div>
     </div>
+
   </div>
 
-  <!-- Main Content Row -->
+  <!-- MAIN CONTENT AREA -->
   <div class="row g-4">
-    <!-- Left: Candidates Chart -->
+
+    <!-- LEFT : LIVE CHART -->
     <div class="col-lg-7">
       <div class="card p-4">
+
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-bold text-primary mb-0">
-            <i class="bi bi-pie-chart-fill me-2"></i>Vote Distribution
+            <i class="bi bi-pie-chart-fill me-2"></i> Vote Distribution
           </h5>
+
           <a href="/admin/download_results" class="btn btn-sm btn-outline-info">
             <i class="bi bi-file-earmark-arrow-down"></i> Export PDF
           </a>
         </div>
-        <canvas id="voteChart" height="230"></canvas>
+
+        <div style="height:300px">
+          <canvas id="voteChart"></canvas>
+        </div>
+
       </div>
     </div>
 
-    <!-- Right: Add Candidate + Controls -->
+    <!-- RIGHT SIDE PANELS -->
     <div class="col-lg-5">
+
+      <!-- ADD CANDIDATE -->
       <div class="card p-4 mb-4">
         <h5 class="fw-bold text-primary mb-3">
-          <i class="bi bi-person-plus-fill me-2"></i>Add New Candidate
+          <i class="bi bi-person-plus-fill me-2"></i> Add New Candidate
         </h5>
-        <form method="POST" action="/admin/add_candidate">
-          <div class="mb-2">
-            <input class="form-control" name="name" placeholder="Candidate name" required>
-          </div>
-          <div class="mb-2">
-            <input class="form-control" name="description" placeholder="Description or agenda">
-          </div>
-          <button class="btn btn-success w-100 mt-2">
+
+        <form method="POST" action="/admin/add_candidate" enctype="multipart/form-data">
+          <input class="form-control mb-2" name="name" placeholder="Candidate Name" required>
+
+          <textarea class="form-control mb-2" name="description"
+                    placeholder="Description / Agenda" rows="2"></textarea>
+
+          <label class="form-label">Upload Photo:</label>
+          <input class="form-control mb-2" type="file" name="photo" accept="image/*" required>
+
+          <label class="form-label">Upload Symbol (optional):</label>
+          <input class="form-control mb-3" type="file" name="symbol" accept="image/*">
+
+          <button class="btn btn-success w-100">
             <i class="bi bi-plus-circle"></i> Add Candidate
           </button>
         </form>
       </div>
 
+      <!-- ADD VOTER -->
+      <div class="card p-4 mb-4">
+        <h5 class="fw-bold text-primary mb-3">
+          <i class="bi bi-person-add me-2"></i> Add New Voter
+        </h5>
+
+        <form action="/admin/add_voter" method="POST">
+          <input class="form-control mb-2" type="text" name="voter_id" placeholder="Voter ID" required>
+          <input class="form-control mb-2" type="text" name="name" placeholder="Voter Name" required>
+          <input class="form-control mb-2" type="email" name="email" placeholder="Email" required>
+
+          <button class="btn btn-primary w-100">Add Voter</button>
+        </form>
+      </div>
+
+      <!-- ELECTION CONTROLS -->
       <div class="card p-4">
         <h5 class="fw-bold text-primary mb-3">
-          <i class="bi bi-gear-fill me-2"></i>Election Controls
+          <i class="bi bi-gear-fill me-2"></i> Election Controls
         </h5>
-      </div>
 
-      <!-- Add New Voter -->
-      <div class="card p-4 mb-4">
-        <h4>Add New Voter</h4>
-        <form action="/admin/add_voter" method="POST">
-            <input type="text" name="voter_id" placeholder="Voter ID" required class="form-control"><br>
-
-            <input type="text" name="name" placeholder="Voter Name" required class="form-control"><br>
-
-            <input type="email" name="email" placeholder="Email" required class="form-control"><br>
-
-            <button type="submit" class="btn btn-primary">Add Voter</button>
-        </form>
-        <hr>
-      </div>
-
-      <div class="card p-4">
+        <!-- Toggle -->
         <form method="POST" action="/admin/toggle_election">
           {% if election_open %}
-            <button class="btn btn-warning w-100 mb-2">
-              <i class="bi bi-lock-fill"></i> Close Election
-            </button>
+          <button class="btn btn-warning w-100 mb-2">
+            <i class="bi bi-lock-fill"></i> Close Election
+          </button>
           {% else %}
-            <button class="btn btn-success w-100 mb-2">
-              <i class="bi bi-unlock-fill"></i> Re-Open Election
-            </button>
+          <button class="btn btn-success w-100 mb-2">
+            <i class="bi bi-unlock-fill"></i> Re-Open Election
+          </button>
           {% endif %}
         </form>
-        <form action="/admin/set_status" method="POST" class="mb-2">
-          <button name="status" value="OPEN" class="btn btn-success w-100 mb-2">Open Election</button>
-          <button name="status" value="CLOSED" class="btn btn-danger w-100">Close Election</button>
+
+        <!-- NEW ELECTION BUTTON -->
+        <form method="POST" action="/admin/new_election">
+          <button class="btn btn-primary w-100 mt-2">
+            <i class="bi bi-plus-circle"></i> Start New Election
+          </button>
         </form>
 
-        <a href="/admin/download_db" class="btn btn-outline-secondary w-100 mt-2">
+        <!-- DB Download -->
+        <a href="/admin/download_db" class="btn btn-outline-secondary w-100 mt-3">
           <i class="bi bi-hdd"></i> Download Database
         </a>
+
+        <!-- Suspicious IPs -->
+        <a href="{{ url_for('suspicious_ips') }}" class="btn btn-outline-danger w-100 mt-3">
+          <i class="bi bi-shield-exclamation"></i> Suspicious IPs
+        </a>
+
       </div>
+
     </div>
+
   </div>
 
-  <!-- Candidate Table -->
+  <!-- CANDIDATE TABLE -->
   <div class="card mt-4 p-4">
     <h5 class="fw-bold text-primary mb-3">
-      <i class="bi bi-people me-2"></i>Candidate List
+      <i class="bi bi-people me-2"></i> Candidate List
     </h5>
-    <table class="table table-hover align-middle text-center">
+
+    <table class="table table-hover text-center align-middle">
       <thead>
         <tr>
           <th>#</th>
@@ -166,48 +193,55 @@
           <td>{{ c['description'] }}</td>
           <td><span class="badge bg-primary">{{ c['votes'] }}</span></td>
         </tr>
-        {% else %}
-        <tr><td colspan="4" class="text-muted">No candidates yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 
-  <!-- Logs -->
-  <div class="card mt-4 p-4">
-    <h4>Activity Log</h4>
-    <table class="table table-bordered">
-    <tr>
-        <th>User ID</th>
-        <th>Action</th>
-        <th>IP Address</th>
-        <th>Timestamp</th>
-    </tr>
-    {% for log in logs %}
-    <tr>
-        <td>{{ log['user_id'] }}</td>
-        <td>{{ log['action'] }}</td>
-        <td>{{ log['ip_address'] }}</td>
-        <td>{{ log['timestamp'] }}</td>
-    </tr>
-    {% endfor %}
+  <!-- LOGS TABLE -->
+  <div class="card mt-4 p-4 mb-5">
+    <h4 class="fw-bold text-primary mb-3">
+      <i class="bi bi-journal-text me-2"></i> Activity Log
+    </h4>
+
+    <table class="table table-bordered table-sm text-center">
+      <thead>
+        <tr>
+          <th>User ID</th>
+          <th>Action</th>
+          <th>IP</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td>{{ log['user_id'] }}</td>
+          <td>{{ log['action'] }}</td>
+          <td>{{ log['ip_address'] }}</td>
+          <td>{{ log['timestamp'] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
+
   </div>
+
 </div>
 {% endblock %}
 
 {% block scripts %}
-<!-- Chart.js -->
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- Inject Flask data as JSON -->
 <script id="chart-data" type="application/json">
-  {{ {
-    "labels": candidates | map(attribute='name') | list,
-    "votes": candidates | map(attribute='votes') | list
-  } | tojson | safe }}
+{{ {
+  "labels": candidates | map(attribute='name') | list,
+  "votes": candidates | map(attribute='votes') | list
+} | tojson | safe }}
 </script>
 
-<!-- Load external JS -->
 <script src="{{ url_for('static', filename='js/chart.js') }}"></script>
+
 {% endblock %}

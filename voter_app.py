@@ -24,6 +24,8 @@ DB_PATH = 'database.db'
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# Limit upload size to 2 MB
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024   # 2 MB
 ALLOWED_IMAGE_EXT = {'png', 'jpg', 'jpeg', 'gif'}
 
 # ---------------------------
@@ -36,6 +38,35 @@ def db_connection():
 
 def valid_email(email):
     return bool(re.match(r"[^@]+@[^@]+\.[^@]+", email))
+
+
+def has_ip_already_voted(ip):
+    conn = db_connection()
+    row = conn.execute(
+        "SELECT 1 FROM logs WHERE action='vote_cast' AND ip_address=? LIMIT 1",
+        (ip,)
+    ).fetchone()
+    conn.close()
+    return row is not None
+
+
+def get_suspicious_ips():
+    """Return a list of IP addresses with login/vote counts and unique voter counts."""
+    conn = db_connection()
+    data = conn.execute("""
+        SELECT 
+            ip_address,
+            SUM(CASE WHEN action='login' THEN 1 ELSE 0 END) AS login_count,
+            SUM(CASE WHEN action='vote_cast' THEN 1 ELSE 0 END) AS vote_count,
+            COUNT(DISTINCT user_id) AS unique_voters
+        FROM logs
+        WHERE ip_address IS NOT NULL AND ip_address != ''
+        GROUP BY ip_address
+        ORDER BY vote_count DESC, login_count DESC
+    """).fetchall()
+    conn.close()
+    return data
+
 
 def send_otp_email(receiver_email, otp):
     sender_email = os.environ.get('SMTP_SENDER')
@@ -61,6 +92,39 @@ def send_otp_email(receiver_email, otp):
             return False
     else:
         print(f"🔑 Dev OTP for {receiver_email}: {otp}")
+        return False
+
+
+def send_vote_receipt(email, voter_id):
+    sender_email = os.environ.get('SMTP_SENDER')
+    password = os.environ.get('SMTP_PASSWORD')
+
+    subject = "E-Chunav – Vote Confirmation"
+    body = (
+        f"Hello {voter_id},\n\n"
+        "Thank you for voting in E-Chunav!\n"
+        "Your vote has been recorded securely.\n\n"
+        "Regards,\n"
+        "E-Chunav Team"
+    )
+
+    if sender_email and password:
+        try:
+            msg = MIMEText(body)
+            msg["Subject"] = subject
+            msg["From"] = sender_email
+            msg["To"] = email
+            server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+            server.login(sender_email, password)
+            server.sendmail(sender_email, email, msg.as_string())
+            server.quit()
+            print(f"📧 Vote receipt sent to {email}")
+            return True
+        except Exception as e:
+            print("⚠️ Failed to send vote receipt:", e)
+            return False
+    else:
+        print("📄 Dev Mode: Vote receipt email content:\n", body)
         return False
 
 def is_election_open():
@@ -94,6 +158,17 @@ def ensure_election_status_row():
         conn.close()
 
 ensure_election_status_row()
+
+
+@app.errorhandler(413)
+def too_large(e):
+    # Friendly message for uploads that exceed MAX_CONTENT_LENGTH
+    try:
+        flash("File too large! Max allowed size is 2 MB.", "danger")
+        return redirect(request.url)
+    except Exception:
+        # If redirect/flash fails (e.g., during API calls), return simple text response
+        return ("File too large. Max allowed size is 2 MB.", 413)
 
 # ---------------------------
 # Voter Routes
@@ -226,6 +301,11 @@ def vote():
     if 'voter_id' not in session:
         return redirect(url_for('index'))
 
+    # IP-level vote blocking
+    user_ip = request.remote_addr
+    if has_ip_already_voted(user_ip):
+        return render_template('voter/ip_blocked.html')
+
     if not is_election_open():
         # Show the election closed page when voting is not open
         return render_template('voter/election_closed.html')
@@ -251,11 +331,11 @@ def vote():
 @app.route('/submit_vote', methods=['POST'])
 def submit_vote():
     if 'voter_id' not in session:
-        flash("Session expired.", "warning")
+        flash("Session expired. Please login again.", "warning")
         return redirect(url_for('index'))
 
     if not is_election_open():
-        flash("Voting closed.", "danger")
+        flash("Voting has ended.", "warning")
         return redirect(url_for('thank_you'))
 
     voter_id = session['voter_id']
@@ -263,16 +343,35 @@ def submit_vote():
 
     conn = db_connection()
     try:
-        conn.execute("UPDATE candidates SET votes=votes+1 WHERE candidate_id=?", (candidate_id,))
-        conn.execute("UPDATE voters SET has_voted=1 WHERE voter_id=?", (voter_id,))
+        voter = conn.execute("SELECT has_voted FROM voters WHERE voter_id=?", (voter_id,)).fetchone()
+        if voter and voter['has_voted']:
+            conn.close()
+            return redirect(url_for('thank_you'))
+
+        # Count the vote
+        conn.execute("UPDATE candidates SET votes = votes + 1 WHERE candidate_id=?", (candidate_id,))
+        conn.execute("UPDATE voters SET has_voted = 1 WHERE voter_id=?", (voter_id,))
+
+        # Log IP
+        user_ip = request.remote_addr
         conn.execute("INSERT INTO logs (action, user_id, ip_address) VALUES (?, ?, ?)",
-                     ("vote_cast", voter_id, request.remote_addr))
+                     ("vote_cast", voter_id, user_ip))
+
+        # Send vote receipt
+        row = conn.execute("SELECT email FROM voters WHERE voter_id=?", (voter_id,)).fetchone()
+        voter_email = row['email'] if row else None
+        try:
+            if voter_email:
+                send_vote_receipt(voter_email, voter_id)
+        except Exception as e:
+            print('Error sending vote receipt:', e)
+
         conn.commit()
     finally:
         conn.close()
 
-    session.pop('voter_id')
-    flash("Vote recorded!", "success")
+    session.pop('voter_id', None)
+    flash("Your vote has been recorded.", "success")
     return redirect(url_for('thank_you'))
 
 @app.route('/thank_you')
@@ -286,6 +385,58 @@ def results():
     conn.close()
     return render_template('voter/result.html', candidates=candidates)
 
+
+@app.route('/live_count')
+def live_count():
+    conn = db_connection()
+    try:
+        active = conn.execute("SELECT id FROM elections WHERE is_active=1 LIMIT 1").fetchone()
+        if active:
+            candidates = conn.execute("SELECT * FROM candidates WHERE election_id=?", (active['id'],)).fetchall()
+        else:
+            candidates = conn.execute("SELECT * FROM candidates").fetchall()
+        
+        total_voters = conn.execute("SELECT COUNT(*) FROM voters").fetchone()[0]
+        total_votes = conn.execute("SELECT COUNT(*) FROM voters WHERE has_voted=1").fetchone()[0]
+    except Exception:
+        candidates = []
+        total_voters = total_votes = 0
+    finally:
+        conn.close()
+
+    return render_template("public/live_count.html",
+                           candidates=candidates,
+                           total_voters=total_voters,
+                           total_votes=total_votes)
+
+@app.route('/admin/suspicious_ips')
+def suspicious_ips():
+    if 'admin' not in session:
+        return redirect(url_for('admin_login'))
+
+    data = get_suspicious_ips()
+
+    # Calculate risk level
+    ip_analysis = []
+    for row in data:
+        risk = "Low"
+        if row['vote_count'] >= 2:
+            risk = "High"
+        elif row['login_count'] >= 10:
+            risk = "Medium"
+        elif row['unique_voters'] >= 3:
+            risk = "Medium"
+
+        ip_analysis.append({
+            "ip": row['ip_address'],
+            "logins": row['login_count'],
+            "votes": row['vote_count'],
+            "users": row['unique_voters'],
+            "risk": risk
+        })
+
+    return render_template("admin/suspicious_ips.html", ips=ip_analysis)
+
 @app.route('/logout')
 def logout():
     session.clear()
@@ -293,4 +444,4 @@ def logout():
 
 # Run App
 if __name__ == '__main__':
-    app.run(debug=True, port=5003)
+    app.run(debug=True, port=5004)
