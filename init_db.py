@@ -193,7 +193,7 @@ def init_db():
     ('v3016', 'ANANYA', 'ananya.is23@sahyadri.edu.in', generate_password_hash('ana123')),
     ('v3019', 'ANVITH', 'anvith.is23@sahyadri.edu.in', generate_password_hash('anv123')),
     ('v3021', 'ARJUN R DEVADIGA', 'arjunr.is23@sahyadri.edu.in', generate_password_hash('arj123')),
-    ('v3025', 'ASHMITA ARUN KURDEKAR', 'ashmita.ise23@sahyadri.edu.in', generate_password_hash('ash123')),
+    ('v3025', 'ASHMITA ARUN KURDEKAR', 'ashmita.is23@sahyadri.edu.in', generate_password_hash('ash123')),
     ('v3028', 'BEN LEON DSOUZA', 'ben.is23@sahyadri.edu.in', generate_password_hash('ben123')),
     ('v3030', 'BHAVISH K PADMASHALI', 'bhavish.is23@sahyadri.edu.in', generate_password_hash('bha123')),
     ('v3032', 'CHAITHRA B H', 'chaithra.is23@sahyadri.edu.in', generate_password_hash('cha123')),
