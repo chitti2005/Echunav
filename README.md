@@ -45,24 +45,28 @@ The project aligns with the **United Nations Sustainable Development Goal 16 (Pe
 
 ## Project Structure
 
+## Project Structure
+
+```
 Echunav/
 │
-├── admin_app.py # Admin panel (election & candidate management)
-├── voter_app.py # Voter login, OTP verification, vote casting
-├── public_app.py # Public live vote counting
-├── init_db.py # Database initialization script
-├── config.py # Application configuration
-├── database.db # SQLite database
+├── admin_app.py          # Admin panel (election & candidate management)
+├── voter_app.py          # Voter login, OTP verification, vote casting
+├── public_app.py         # Public live vote counting
+├── init_db.py            # Database initialization script
+├── config.py             # Application configuration
+├── database.db           # SQLite database
 │
-├── templates/ # HTML templates
-├── static/ # CSS, JS, images, uploads
-├── modules/ # Helper modules
-├── logs/ # Application logs
+├── templates/            # HTML templates
+├── static/               # CSS, JS, images, uploads
+├── modules/              # Helper modules
+├── logs/                 # Application logs
 │
-├── requirements.txt # Python dependencies
-├── run_project.sh # Run helper script
-├── view_db.py # Database inspection tool
-└── README.md # Project documentation
+├── requirements.txt      # Python dependencies
+├── run_project.sh        # Run helper script
+├── view_db.py            # Database inspection tool
+└── README.md             # Project documentation
+```
 
 
 ---
@@ -86,14 +90,16 @@ python -m venv venv
 source venv/bin/activate     # Linux / macOS
 venv\Scripts\activate        # Windows
 
+
 3️⃣ Install Dependencies
 pip install -r requirements.txt
+
 
 4️⃣ Initialize the Database
 python init_db.py
 
 
-This will:
+###This will:
 
 Create all required database tables
 
@@ -101,10 +107,10 @@ Insert default admin credentials
 
 Initialize the first election
 
+
+
 5️⃣ Run the Applications
-
 Open three separate terminals (or run individually):
-
 python admin_app.py     # Admin Panel → http://127.0.0.1:5004
 python voter_app.py     # Voter Panel → http://127.0.0.1:5000
 python public_app.py    # Live Count → http://127.0.0.1:5001
@@ -182,13 +188,3 @@ License
 
 This project is developed for academic and educational purposes.
 
-
----
-
-If you want, I can also:
-- Add **screenshots section**
-- Create a **Deployment / Hosting guide**
-- Add **default admin credentials note**
-- Make a **short README for submissions**
-
-Just tell me 👍
